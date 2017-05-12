@@ -234,7 +234,7 @@ class TimelineController extends EventHandler {
           }
         }
         if (!textTrack) {
-            textTrack = this.createTextTrack('subtitles', track.name, track.lang);          
+            textTrack = this.createTextTrack('subtitles', track.name, track.lang);
         }
         textTrack.mode = track.default ? 'showing' : 'hidden';
         this.textTracks.push(textTrack);
@@ -252,7 +252,7 @@ class TimelineController extends EventHandler {
     if (frag.type === 'main') {
       var sn = frag.sn;
       // if this frag isn't contiguous, clear the parser so cues with bad start/end times aren't added to the textTrack
-      if (sn !== this.lastSn + 1) {
+      if (this.enabled && this.config.enableCEA708Captions && sn !== this.lastSn + 1) {
         this.cea608Parser.reset();
       }
       this.lastSn = sn;

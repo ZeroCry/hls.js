@@ -79,6 +79,7 @@ header {
       <select id="streamSelect" class="innerControls"><option value="" selected>(Enter custom URL below)</option></select>
       <input id="streamURL" class="innerControls" type=text value=""/>
       <label class="innerControls"><input id="enableStreaming" type=checkbox checked/> Enable Streaming</label>
+      <label class="innerControls"><input id="enable708" type=checkbox checked/> Enable CEA-708</label>
       <label class="innerControls"><input id="autoRecoverError" type=checkbox checked/> Auto-Recover Media Error</label>
       <label class="innerControls"><input id="enableWorker" type=checkbox checked/> Enable Worker</label>
       <label class="innerControls"><input id="dumpfMP4" type=checkbox unchecked/> dump fMP4</label>
@@ -228,6 +229,7 @@ $(document).ready(function() {
    $('#metricsButtonWindow').toggle(windowSliding);
    $('#metricsButtonFixed').toggle(!windowSliding);
    $('#enableStreaming').click(function()      { enableStreaming = this.checked; loadStream($('#streamURL').val()); });
+   $('#enable708').click(function()      { enable708 = this.checked; loadStream($('#streamURL').val()); });
    $('#autoRecoverError').click(function()  { autoRecoverError = this.checked; updatePermalink();});
    $('#enableWorker').click(function()  { enableWorker = this.checked; updatePermalink();});
    $('#dumpfMP4').click(function()  { dumpfMP4 = this.checked; updatePermalink();});
@@ -247,7 +249,8 @@ $(document).ready(function() {
 
   'use strict';
   var hls,events, stats,tracks,fmp4Data,
-      enableStreaming = JSON.parse(getURLParam('enableStreaming',true))
+      enableStreaming = JSON.parse(getURLParam('enableStreaming',true)),
+      enable708 = JSON.parse(getURLParam('enable708',true)),
       autoRecoverError = JSON.parse(getURLParam('autoRecoverError',true)),
       enableWorker = JSON.parse(getURLParam('enableWorker',true)),
       levelCapping = JSON.parse(getURLParam('levelCapping',-1)),
@@ -282,7 +285,7 @@ $(document).ready(function() {
        events = { url : url, t0 : performance.now(), load : [], buffer : [], video : [], level : [], bitrate : []};
        recoverDecodingErrorDate = recoverSwapAudioCodecDate = null;
        fmp4Data = { 'audio': [], 'video': [] };
-       hls = new Hls({debug:true, enableWorker : enableWorker, defaultAudioCodec : defaultAudioCodec});
+       hls = new Hls({debug:true, enableWorker : enableWorker, defaultAudioCodec : defaultAudioCodec, enableCEA708Captions:enable708});
        $("#HlsStatus").text('loading manifest and attaching video element...');
        hls.loadSource(url);
        hls.autoLevelCapping = levelCapping;
@@ -1098,6 +1101,7 @@ function updateAudioTrackInfo() {
       var url = $('#streamURL').val();
       var hlsLink = document.URL.split('?')[0] +  '?src=' + encodeURIComponent(url) +
                     '&enableStreaming=' + enableStreaming +
+                    '&enable708=' + enable708 +
                     '&autoRecoverError=' + autoRecoverError +
                     '&enableWorker=' + enableWorker +
                     '&dumpfMP4=' + dumpfMP4 +
