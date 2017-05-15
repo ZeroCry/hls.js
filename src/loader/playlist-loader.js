@@ -97,9 +97,9 @@ class Fragment {
    * @returns {Uint8Array}
    */
   createInitializationVector(segmentNumber) {
-    var uint8View = new Uint8Array(16);
+    const uint8View = new Uint8Array(16);
 
-    for (var i = 12; i < 16; i++) {
+    for (let i = 12; i < 16; i++) {
       uint8View[i] = (segmentNumber >> 8 * (15 - i)) & 0xff;
     }
 
@@ -113,7 +113,7 @@ class Fragment {
    * @returns {*} - an object to be applied as a fragment's decryptdata
    */
   fragmentDecryptdataFromLevelkey(levelkey, segmentNumber) {
-    var decryptdata = levelkey;
+    let decryptdata = levelkey;
 
     if (levelkey && levelkey.method && levelkey.uri && !levelkey.iv) {
       decryptdata = new LevelKey();
@@ -218,10 +218,10 @@ class PlaylistLoader extends EventHandler {
     while ((result = MASTER_PLAYLIST_REGEX.exec(string)) != null){
       const level = {};
 
-      var attrs = level.attrs = new AttrList(result[1]);
+      const attrs = level.attrs = new AttrList(result[1]);
       level.url = this.resolve(result[2], baseurl);
 
-      var resolution = attrs.decimalResolution('RESOLUTION');
+      const resolution = attrs.decimalResolution('RESOLUTION');
       if(resolution) {
         level.width = resolution.width;
         level.height = resolution.height;
@@ -229,7 +229,7 @@ class PlaylistLoader extends EventHandler {
       level.bitrate = attrs.decimalInteger('AVERAGE-BANDWIDTH') || attrs.decimalInteger('BANDWIDTH');
       level.name = attrs.NAME;
 
-      var codecs = attrs.CODECS;
+      let codecs = attrs.CODECS;
       if(codecs) {
         codecs = codecs.split(/[ ,]+/);
         for (let i = 0; i < codecs.length; i++) {
@@ -252,7 +252,7 @@ class PlaylistLoader extends EventHandler {
     MASTER_PLAYLIST_MEDIA_REGEX.lastIndex = 0;
     while ((result = MASTER_PLAYLIST_MEDIA_REGEX.exec(string)) != null){
       const media = {};
-      var attrs = new AttrList(result[1]);
+      const attrs = new AttrList(result[1]);
       if(attrs.TYPE === type) {
         media.groupId = attrs['GROUP-ID'];
         media.name = attrs.NAME;
@@ -275,7 +275,8 @@ class PlaylistLoader extends EventHandler {
   }
 
   avc1toavcoti(codec) {
-    var result, avcdata = codec.split('.');
+    let result;
+    const avcdata = codec.split('.');
     if (avcdata.length > 2) {
       result = avcdata.shift() + '.';
       result += parseInt(avcdata.shift()).toString(16);
@@ -287,15 +288,15 @@ class PlaylistLoader extends EventHandler {
   }
 
   parseLevelPlaylist(string, baseurl, id, type) {
-    var currentSN = 0,
-        totalduration = 0,
-        level = {type: null, version: null, url: baseurl, fragments: [], live: true, startSN: 0},
-        levelkey = new LevelKey(),
-        cc = 0,
-        prevFrag = null,
-        frag = new Fragment(),
-        result,
-        i;
+    let currentSN = 0,
+      totalduration = 0;
+    const level = {type: null, version: null, url: baseurl, fragments: [], live: true, startSN: 0};
+    let levelkey = new LevelKey(),
+      cc = 0,
+      prevFrag = null,
+      frag = new Fragment(),
+      result,
+      i;
 
     LEVEL_PLAYLIST_REGEX_FAST.lastIndex = 0;
 
@@ -380,11 +381,11 @@ class PlaylistLoader extends EventHandler {
             break;
           case 'KEY':
             // https://tools.ietf.org/html/draft-pantos-http-live-streaming-08#section-3.4.4
-            var decryptparams = value1;
-            var keyAttrs = new AttrList(decryptparams);
-            var decryptmethod = keyAttrs.enumeratedString('METHOD'),
-                decrypturi = keyAttrs.URI,
-                decryptiv = keyAttrs.hexadecimalInteger('IV');
+            const decryptparams = value1;
+            const keyAttrs = new AttrList(decryptparams);
+            const decryptmethod = keyAttrs.enumeratedString('METHOD'),
+              decrypturi = keyAttrs.URI,
+              decryptiv = keyAttrs.hexadecimalInteger('IV');
             if (decryptmethod) {
               levelkey = new LevelKey();
               if ((decrypturi) && (['AES-128', 'SAMPLE-AES'].indexOf(decryptmethod) >= 0)) {
@@ -437,12 +438,12 @@ class PlaylistLoader extends EventHandler {
   }
 
   loadsuccess(response, stats, context) {
-    var string = response.data,
-        url = response.url,
-        type = context.type,
-        id = context.id,
-        level = context.level,
-        hls = this.hls;
+    const string = response.data;
+    let url = response.url;
+    const type = context.type,
+      id = context.id,
+      level = context.level,
+      hls = this.hls;
 
     this.loaders[type] = undefined;
     // responseURL not supported on some browsers (it is used to detect URL redirection)
@@ -510,7 +511,8 @@ class PlaylistLoader extends EventHandler {
   }
 
   loaderror(response, context) {
-    var details, fatal,loader = context.loader;
+    let details, fatal;
+    const loader = context.loader;
     switch(context.type) {
       case 'manifest':
         details = ErrorDetails.MANIFEST_LOAD_ERROR;
@@ -533,7 +535,8 @@ class PlaylistLoader extends EventHandler {
   }
 
   loadtimeout(stats, context) {
-    var details, fatal, loader = context.loader;
+    let details, fatal;
+    const loader = context.loader;
     switch(context.type) {
       case 'manifest':
         details = ErrorDetails.MANIFEST_LOAD_TIMEOUT;

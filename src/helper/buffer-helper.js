@@ -5,8 +5,8 @@
 const BufferHelper = {
   isBuffered : function(media,position) {
     if (media) {
-      let buffered = media.buffered;
-      const length = buffered.length;
+      const buffered = media.buffered,
+        length = buffered.length;
       for (let i = 0; i < length; i++) {
         if (position >= buffered.start(i) && position <= buffered.end(i)) {
           return true;
