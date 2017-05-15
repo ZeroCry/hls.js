@@ -589,6 +589,10 @@ var _audioStreamController = _dereq_(6);
 
 var _audioStreamController2 = _interopRequireDefault(_audioStreamController);
 
+var _id3TrackController = _dereq_(11);
+
+var _id3TrackController2 = _interopRequireDefault(_id3TrackController);
+
 var _cues = _dereq_(50);
 
 var _cues2 = _interopRequireDefault(_cues);
@@ -612,9 +616,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 //#endif
 
 //#if subtitle
-
-//import FetchLoader from './utils/fetch-loader';
-//#if altaudio
 var hlsDefaultConfig = exports.hlsDefaultConfig = {
       autoStartLoad: true, // used by stream-controller
       startPosition: -1, // used by stream-controller
@@ -671,6 +672,9 @@ var hlsDefaultConfig = exports.hlsDefaultConfig = {
       audioStreamController: _audioStreamController2.default,
       audioTrackController: _audioTrackController2.default,
       //#endif
+      // #if id3
+      id3TrackController: _id3TrackController2.default,
+      //#endif
       //#if subtitle
       subtitleStreamController: _subtitleStreamController2.default,
       subtitleTrackController: _subtitleTrackController2.default,
@@ -697,8 +701,14 @@ var hlsDefaultConfig = exports.hlsDefaultConfig = {
       maxLoadingDelay: 4, // used by abr-controller
       minAutoBitrate: 0 // used by hls
 };
+//#endif
 
-},{"10":10,"14":14,"15":15,"16":16,"5":5,"50":50,"58":58,"6":6,"7":7,"8":8,"9":9}],5:[function(_dereq_,module,exports){
+//#if id3
+
+//import FetchLoader from './utils/fetch-loader';
+//#if altaudio
+
+},{"10":10,"11":11,"14":14,"15":15,"16":16,"5":5,"50":50,"58":58,"6":6,"7":7,"8":8,"9":9}],5:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -10098,10 +10108,6 @@ var _levelController = _dereq_(12);
 
 var _levelController2 = _interopRequireDefault(_levelController);
 
-var _id3TrackController = _dereq_(11);
-
-var _id3TrackController2 = _interopRequireDefault(_id3TrackController);
-
 var _logger = _dereq_(53);
 
 var _events3 = _dereq_(1);
@@ -10215,7 +10221,6 @@ var Hls = function () {
     var playListLoader = new _playlistLoader2.default(this);
     var fragmentLoader = new _fragmentLoader2.default(this);
     var keyLoader = new _keyLoader2.default(this);
-    var id3TrackController = new _id3TrackController2.default(this);
 
     // network controllers
     var levelController = this.levelController = new _levelController2.default(this);
@@ -10229,7 +10234,7 @@ var Hls = function () {
     }
     this.networkControllers = networkControllers;
 
-    var coreComponents = [playListLoader, fragmentLoader, keyLoader, abrController, bufferController, capLevelController, fpsController, id3TrackController];
+    var coreComponents = [playListLoader, fragmentLoader, keyLoader, abrController, bufferController, capLevelController, fpsController];
 
     // optional audio track and subtitle controller
     Controller = config.audioTrackController;
@@ -10246,8 +10251,8 @@ var Hls = function () {
       coreComponents.push(subtitleTrackController);
     }
 
-    // optional subtitle controller
-    [config.subtitleStreamController, config.timelineController].forEach(function (Controller) {
+    // optional subtitle & id3 controller
+    [config.subtitleStreamController, config.timelineController, config.id3TrackController].forEach(function (Controller) {
       if (Controller) {
         coreComponents.push(new Controller(_this));
       }
@@ -10586,7 +10591,7 @@ var Hls = function () {
 
 exports.default = Hls;
 
-},{"1":1,"11":11,"12":12,"13":13,"2":2,"33":33,"35":35,"4":4,"41":41,"42":42,"43":43,"53":53}],40:[function(_dereq_,module,exports){
+},{"1":1,"12":12,"13":13,"2":2,"33":33,"35":35,"4":4,"41":41,"42":42,"43":43,"53":53}],40:[function(_dereq_,module,exports){
 'use strict';
 
 // This is mostly for support of the es6 module export
