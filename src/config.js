@@ -14,6 +14,10 @@ import AudioTrackController from './controller/audio-track-controller';
 import AudioStreamController from  './controller/audio-stream-controller';
 //#endif
 
+//#if id3
+import ID3TrackController from './controller/id3-track-controller';
+//#endif
+
 //#if subtitle
 import Cues from './utils/cues';
 import TimelineController from './controller/timeline-controller';
@@ -76,6 +80,9 @@ export var hlsDefaultConfig = {
 //#if altaudio
       audioStreamController: AudioStreamController,
       audioTrackController : AudioTrackController,
+//#endif
+// #if id3
+      id3TrackController: ID3TrackController,
 //#endif
 //#if subtitle
       subtitleStreamController: SubtitleStreamController,
