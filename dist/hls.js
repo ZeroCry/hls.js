@@ -4324,8 +4324,8 @@ var StreamController = function (_EventHandler) {
   }, {
     key: '_checkFragmentChanged',
     value: function _checkFragmentChanged() {
-      var fragPlayingCurrent,
-          currentTime,
+      var fragPlayingCurrent = void 0,
+          currentTime = void 0,
           video = this.media;
       if (video && video.readyState && video.seeking === false) {
         currentTime = video.currentTime;
@@ -4612,7 +4612,7 @@ var StreamController = function (_EventHandler) {
     value: function onManifestParsed(data) {
       var aac = false,
           heaac = false,
-          codec;
+          codec = void 0;
       data.levels.forEach(function (level) {
         // detect if we have different kind of audio codecs used amongst playlists
         codec = level.audioCodec;
@@ -4643,8 +4643,8 @@ var StreamController = function (_EventHandler) {
       var newDetails = data.details,
           newLevelId = data.level,
           curLevel = this.levels[newLevelId],
-          duration = newDetails.totalduration,
-          sliding = 0;
+          duration = newDetails.totalduration;
+      var sliding = 0;
 
       _logger.logger.log('level ' + newLevelId + ' loaded [' + newDetails.startSN + ',' + newDetails.endSN + '],duration:' + duration);
       this.levelLastLoaded = newLevelId;
@@ -4783,9 +4783,9 @@ var StreamController = function (_EventHandler) {
       var fragCurrent = this.fragCurrent;
       var fragNew = data.frag;
       if (fragCurrent && data.id === 'main' && fragNew.sn === fragCurrent.sn && fragNew.level === fragCurrent.level && this.state === State.PARSING) {
-        var tracks = data.tracks,
-            trackName,
-            track;
+        var tracks = data.tracks;
+        var trackName = void 0,
+            track = void 0;
 
         // if audio track is expected to come from audio stream controller, discard any coming from main
         if (tracks.audio && this.altAudio) {
@@ -4794,8 +4794,8 @@ var StreamController = function (_EventHandler) {
         // include levelCodec in audio and video tracks
         track = tracks.audio;
         if (track) {
-          var audioCodec = this.levels[this.level].audioCodec,
-              ua = navigator.userAgent.toLowerCase();
+          var audioCodec = this.levels[this.level].audioCodec;
+          var ua = navigator.userAgent.toLowerCase();
           if (audioCodec && this.audioCodecSwap) {
             _logger.logger.log('swapping playlist audio codec');
             if (audioCodec.indexOf('mp4a.40.5') !== -1) {
@@ -4921,8 +4921,8 @@ var StreamController = function (_EventHandler) {
     key: 'onAudioTrackSwitching',
     value: function onAudioTrackSwitching(data) {
       // if any URL found on new audio track, it is an alternate audio track
-      var altAudio = !!data.url,
-          trackId = data.id;
+      var altAudio = !!data.url;
+      var trackId = data.id;
       // if we switch on main audio, ensure that main fragment scheduling is synced with media.buffered
       // don't do anything if we switch to alt audio: audio stream controller is handling it.
       // we will just have to change buffer scheduling on audioTrackSwitched
@@ -9834,8 +9834,9 @@ exports.default = AAC;
 var BufferHelper = {
   isBuffered: function isBuffered(media, position) {
     if (media) {
-      var buffered = media.buffered;
-      for (var i = 0; i < buffered.length; i++) {
+      var buffered = media.buffered,
+          length = buffered.length;
+      for (var i = 0; i < length; i++) {
         if (position >= buffered.start(i) && position <= buffered.end(i)) {
           return true;
         }
@@ -9848,8 +9849,8 @@ var BufferHelper = {
     if (media) {
       var vbuffered = media.buffered,
           buffered = [],
-          i;
-      for (i = 0; i < vbuffered.length; i++) {
+          l = vbuffered.length;
+      for (var i = 0; i < l; i++) {
         buffered.push({ start: vbuffered.start(i), end: vbuffered.end(i) });
       }
       return this.bufferedInfo(buffered, pos, maxHoleDuration);
@@ -9860,29 +9861,31 @@ var BufferHelper = {
 
   bufferedInfo: function bufferedInfo(buffered, pos, maxHoleDuration) {
     var buffered2 = [],
+        // bufferStart and bufferEnd are buffer boundaries around current video position
+    bufferLen = void 0,
+        bufferStart = void 0,
+        bufferEnd = void 0,
+        bufferStartNext = void 0,
+        i = void 0;
 
-    // bufferStart and bufferEnd are buffer boundaries around current video position
-    bufferLen,
-        bufferStart,
-        bufferEnd,
-        bufferStartNext,
-        i;
+    // DEELY - disabled sort since not targeting IE
     // sort on buffer.start/smaller end (IE does not always return sorted buffered range)
-    buffered.sort(function (a, b) {
-      var diff = a.start - b.start;
-      if (diff) {
-        return diff;
-      } else {
-        return b.end - a.end;
-      }
-    });
+    // buffered.sort(function (a, b) {
+    //   var diff = a.start - b.start;
+    //   if (diff) {
+    //     return diff;
+    //   } else {
+    //     return b.end - a.end;
+    //   }
+    // });
+
     // there might be some small holes between buffer time range
     // consider that holes smaller than maxHoleDuration are irrelevant and build another
     // buffer time range representations that discards those holes
     for (i = 0; i < buffered.length; i++) {
-      var buf2len = buffered2.length;
-      if (buf2len) {
-        var buf2end = buffered2[buf2len - 1].end;
+      var _buf2len = buffered2.length;
+      if (_buf2len) {
+        var buf2end = buffered2[_buf2len - 1].end;
         // if small hole (value between 0 or maxHoleDuration ) or overlapping (negative)
         if (buffered[i].start - buf2end < maxHoleDuration) {
           // merge overlapping time ranges
@@ -9890,7 +9893,7 @@ var BufferHelper = {
           // e.g.  [ 1, 15] with  [ 2,8] => [ 1,15] (no need to modify lastRange.end)
           // whereas [ 1, 8] with  [ 2,15] => [ 1,15] ( lastRange should switch from [1,8] to [1,15])
           if (buffered[i].end > buf2end) {
-            buffered2[buf2len - 1].end = buffered[i].end;
+            buffered2[_buf2len - 1].end = buffered[i].end;
           }
         } else {
           // big hole
@@ -9901,7 +9904,9 @@ var BufferHelper = {
         buffered2.push(buffered[i]);
       }
     }
-    for (i = 0, bufferLen = 0, bufferStart = bufferEnd = pos; i < buffered2.length; i++) {
+
+    var buf2len = buffered2.length;
+    for (i = 0, bufferLen = 0, bufferStart = bufferEnd = pos; i < buf2len; i++) {
       var start = buffered2[i].start,
           end = buffered2[i].end;
       //logger.log('buf start/end:' + buffered.start(i) + '/' + buffered.end(i));
@@ -11204,8 +11209,8 @@ var PlaylistLoader = function (_EventHandler) {
   }, {
     key: 'avc1toavcoti',
     value: function avc1toavcoti(codec) {
-      var result,
-          avcdata = codec.split('.');
+      var result = void 0;
+      var avcdata = codec.split('.');
       if (avcdata.length > 2) {
         result = avcdata.shift() + '.';
         result += parseInt(avcdata.shift()).toString(16);
@@ -11219,14 +11224,14 @@ var PlaylistLoader = function (_EventHandler) {
     key: 'parseLevelPlaylist',
     value: function parseLevelPlaylist(string, baseurl, id, type) {
       var currentSN = 0,
-          totalduration = 0,
-          level = { type: null, version: null, url: baseurl, fragments: [], live: true, startSN: 0 },
-          levelkey = new LevelKey(),
+          totalduration = 0;
+      var level = { type: null, version: null, url: baseurl, fragments: [], live: true, startSN: 0 };
+      var levelkey = new LevelKey(),
           cc = 0,
           prevFrag = null,
           frag = new Fragment(),
-          result,
-          i;
+          result = void 0,
+          i = void 0;
 
       LEVEL_PLAYLIST_REGEX_FAST.lastIndex = 0;
 
@@ -11373,9 +11378,9 @@ var PlaylistLoader = function (_EventHandler) {
   }, {
     key: 'loadsuccess',
     value: function loadsuccess(response, stats, context) {
-      var string = response.data,
-          url = response.url,
-          type = context.type,
+      var string = response.data;
+      var url = response.url;
+      var type = context.type,
           id = context.id,
           level = context.level,
           hls = this.hls;
@@ -11446,9 +11451,9 @@ var PlaylistLoader = function (_EventHandler) {
   }, {
     key: 'loaderror',
     value: function loaderror(response, context) {
-      var details,
-          fatal,
-          loader = context.loader;
+      var details = void 0,
+          fatal = void 0;
+      var loader = context.loader;
       switch (context.type) {
         case 'manifest':
           details = _errors.ErrorDetails.MANIFEST_LOAD_ERROR;
@@ -11472,9 +11477,9 @@ var PlaylistLoader = function (_EventHandler) {
   }, {
     key: 'loadtimeout',
     value: function loadtimeout(stats, context) {
-      var details,
-          fatal,
-          loader = context.loader;
+      var details = void 0,
+          fatal = void 0;
+      var loader = context.loader;
       switch (context.type) {
         case 'manifest':
           details = _errors.ErrorDetails.MANIFEST_LOAD_TIMEOUT;
