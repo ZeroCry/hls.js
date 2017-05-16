@@ -95,7 +95,7 @@ class BufferController extends EventHandler {
     let media = this.media = data.media;
     if (media) {
       // setup the media source
-      var ms = this.mediaSource = new MediaSource();
+      const ms = this.mediaSource = new MediaSource();
       //Media Source listeners
       this.onmso = this.onMediaSourceOpen.bind(this);
       this.onmse = this.onMediaSourceEnded.bind(this);
@@ -110,7 +110,7 @@ class BufferController extends EventHandler {
 
   onMediaDetaching() {
     logger.log('media source detaching');
-    var ms = this.mediaSource;
+    const ms = this.mediaSource;
     if (ms) {
       if (ms.readyState === 'open') {
         try {
@@ -224,9 +224,9 @@ class BufferController extends EventHandler {
   }
 
   onBufferReset() {
-    var sourceBuffer = this.sourceBuffer;
-    for(var type in sourceBuffer) {
-      var sb = sourceBuffer[type];
+    const sourceBuffer = this.sourceBuffer;
+    for(let type in sourceBuffer) {
+      const sb = sourceBuffer[type];
       try {
         this.mediaSource.removeSourceBuffer(sb);
         sb.removeEventListener('updateend', this.onsbue);
@@ -244,7 +244,7 @@ class BufferController extends EventHandler {
     // if source buffer(s) not created yet, appended buffer tracks in this.pendingTracks
     // if sourcebuffers already created, do nothing ...
     if (Object.keys(this.sourceBuffer).length === 0) {
-      for (var trackName in tracks) { this.pendingTracks[trackName] = tracks[trackName]; }
+      for (let trackName in tracks) { this.pendingTracks[trackName] = tracks[trackName]; }
       let mediaSource = this.mediaSource;
       if (mediaSource && mediaSource.readyState === 'open') {
         // try to create sourcebuffers if mediasource opened
@@ -255,7 +255,7 @@ class BufferController extends EventHandler {
 
 
   createSourceBuffers(tracks) {
-    var sourceBuffer = this.sourceBuffer,mediaSource = this.mediaSource;
+    const sourceBuffer = this.sourceBuffer, mediaSource = this.mediaSource;
 
     for (let trackName in tracks) {
       if(!sourceBuffer[trackName]) {
@@ -300,7 +300,7 @@ class BufferController extends EventHandler {
 
   // on BUFFER_EOS mark matching sourcebuffer(s) as ended and trigger checkEos()
   onBufferEos(data) {
-    var sb = this.sourceBuffer;
+    const sb = this.sourceBuffer;
     let dataType = data.type;
     for(let type in sb) {
       if (!dataType || type === dataType) {
@@ -315,7 +315,8 @@ class BufferController extends EventHandler {
 
  // if all source buffers are marked as ended, signal endOfStream() to MediaSource.
  checkEos() {
-    var sb = this.sourceBuffer, mediaSource = this.mediaSource;
+    const sb = this.sourceBuffer;
+   let mediaSource = this.mediaSource;
     if (!mediaSource || mediaSource.readyState !== 'open') {
       this._needsEos = false;
       return;
@@ -390,7 +391,7 @@ class BufferController extends EventHandler {
   doFlush() {
     // loop through all buffer ranges to flush
     while(this.flushRange.length) {
-      var range = this.flushRange[0];
+      const range = this.flushRange[0];
       // flushBuffer will abort any buffer append in progress and flush Audio/Video Buffer
       if (this.flushBuffer(range.start, range.end, range.type)) {
         // range flushed, remove from flush array
@@ -407,10 +408,10 @@ class BufferController extends EventHandler {
       this._needsFlush = false;
 
       // let's recompute this.appended, which is used to avoid flush looping
-      var appended = 0;
-      var sourceBuffer = this.sourceBuffer;
+      let appended = 0;
+      const sourceBuffer = this.sourceBuffer;
       try {
-        for (var type in sourceBuffer) {
+        for (let type in sourceBuffer) {
           appended += sourceBuffer[type].buffered.length;
         }
       } catch(error) {
@@ -424,7 +425,8 @@ class BufferController extends EventHandler {
   }
 
   doAppending() {
-    var hls = this.hls, sourceBuffer = this.sourceBuffer, segments = this.segments;
+    const hls = this.hls, sourceBuffer = this.sourceBuffer;
+    let segments = this.segments;
     if (Object.keys(sourceBuffer).length) {
       if (this.media.error) {
         this.segments = [];
@@ -462,7 +464,7 @@ class BufferController extends EventHandler {
           // in case any error occured while appending, put back segment in segments table
           logger.error(`error while trying to append buffer:${err.message}`);
           segments.unshift(segment);
-          var event = {type: ErrorTypes.MEDIA_ERROR, parent : segment.parent};
+          const event = {type: ErrorTypes.MEDIA_ERROR, parent: segment.parent};
           if(err.code !== 22) {
             if (this.appendError) {
               this.appendError++;
@@ -503,12 +505,13 @@ class BufferController extends EventHandler {
     as sourceBuffer.remove() is asynchronous, flushBuffer will be retriggered on sourceBuffer update end
   */
   flushBuffer(startOffset, endOffset, typeIn) {
-    var sb, i, bufStart, bufEnd, flushStart, flushEnd, sourceBuffer = this.sourceBuffer;
+    let sb, i, bufStart, bufEnd, flushStart, flushEnd;
+    const sourceBuffer = this.sourceBuffer;
     if (Object.keys(sourceBuffer).length) {
       logger.log(`flushBuffer,pos/start/end: ${this.media.currentTime.toFixed(3)}/${startOffset}/${endOffset}`);
       // safeguard to avoid infinite looping : don't try to flush more than the nb of appended segments
       if (this.flushBufferCounter < this.appended) {
-        for (var type in sourceBuffer) {
+        for (let type in sourceBuffer) {
           // check if sourcebuffer type is defined (typeIn): if yes, let's only flush this one
           // if no, let's flush all sourcebuffers
           if (typeIn && type !== typeIn) {

@@ -1369,8 +1369,8 @@ var BufferController = function (_EventHandler) {
   }, {
     key: 'checkEos',
     value: function checkEos() {
-      var sb = this.sourceBuffer,
-          mediaSource = this.mediaSource;
+      var sb = this.sourceBuffer;
+      var mediaSource = this.mediaSource;
       if (!mediaSource || mediaSource.readyState !== 'open') {
         this._needsEos = false;
         return;
@@ -1486,8 +1486,8 @@ var BufferController = function (_EventHandler) {
     key: 'doAppending',
     value: function doAppending() {
       var hls = this.hls,
-          sourceBuffer = this.sourceBuffer,
-          segments = this.segments;
+          sourceBuffer = this.sourceBuffer;
+      var segments = this.segments;
       if (Object.keys(sourceBuffer).length) {
         if (this.media.error) {
           this.segments = [];
@@ -1570,13 +1570,13 @@ var BufferController = function (_EventHandler) {
   }, {
     key: 'flushBuffer',
     value: function flushBuffer(startOffset, endOffset, typeIn) {
-      var sb,
-          i,
-          bufStart,
-          bufEnd,
-          flushStart,
-          flushEnd,
-          sourceBuffer = this.sourceBuffer;
+      var sb = void 0,
+          i = void 0,
+          bufStart = void 0,
+          bufEnd = void 0,
+          flushStart = void 0,
+          flushEnd = void 0;
+      var sourceBuffer = this.sourceBuffer;
       if (Object.keys(sourceBuffer).length) {
         _logger.logger.log('flushBuffer,pos/start/end: ' + this.media.currentTime.toFixed(3) + '/' + startOffset + '/' + endOffset);
         // safeguard to avoid infinite looping : don't try to flush more than the nb of appended segments
@@ -2848,7 +2848,7 @@ var StreamController = function (_EventHandler) {
         this.state = State.KEY_LOADING;
         hls.trigger(_events2.default.KEY_LOADING, { frag: frag });
       } else {
-        _logger.logger.log('Loading ' + frag.sn + ' of [' + levelDetails.startSN + ' ,' + levelDetails.endSN + '],level ' + level + ', currentTime:' + pos.toFixed(3) + ',bufferEnd:' + bufferEnd.toFixed(3));
+        _logger.logger.log('Loading ' + frag.sn + ' of [' + levelDetails.startSN + ' ,' + levelDetails.endSN + '],level ' + level + ', currentTime:' + pos.toFixed(3) + ',bufferEnd:' + bufferEnd.toFixed(3) + ',buffer remaining:' + (bufferEnd - pos).toFixed(3));
         // ensure that we are not reloading the same fragments in loop ...
         if (this.fragLoadIdx !== undefined) {
           this.fragLoadIdx++;
