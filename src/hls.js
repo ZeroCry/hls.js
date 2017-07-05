@@ -1,8 +1,6 @@
 /**
  * HLS interface
  */
-'use strict';
-
 import URLToolkit from 'url-toolkit';
 import Event from './events';
 import {ErrorTypes, ErrorDetails} from './errors';
@@ -26,10 +24,19 @@ class Hls {
   }
 
   static isSupported() {
-    window.MediaSource = window.MediaSource || window.WebKitMediaSource;
-    return (window.MediaSource &&
-            typeof window.MediaSource.isTypeSupported === 'function' &&
-            window.MediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"'));
+    const mediaSource = window.MediaSource = window.MediaSource || window.WebKitMediaSource;
+    const sourceBuffer = window.SourceBuffer = window.SourceBuffer || window.WebKitSourceBuffer;
+    const isTypeSupported = mediaSource &&
+                            typeof mediaSource.isTypeSupported === 'function' &&
+                            mediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"');
+
+    // if SourceBuffer is exposed ensure its API is valid
+    // safari and old version of Chrome doe not expose SourceBuffer globally so checking SourceBuffer.prototype is impossible
+    const sourceBufferValidAPI = !sourceBuffer ||
+                                 (sourceBuffer.prototype &&
+                                 typeof sourceBuffer.prototype.appendBuffer === 'function' &&
+                                 typeof sourceBuffer.prototype.remove === 'function');
+    return isTypeSupported && sourceBufferValidAPI;
   }
 
   static get Events() {

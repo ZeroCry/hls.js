@@ -473,9 +473,21 @@
         expGolombDecoder,
         avcSample = this.avcSample,
         push,
-        i;
+        spsfound = false,
+        i,
+        pushAccesUnit = this.pushAccesUnit.bind(this),
+        createAVCSample = function(key,pts,dts,debug) {
+          return { key : key, pts : pts, dts : dts, units : [], debug : debug};
+        };
     //free pes.data to save up some memory
     pes.data = null;
+
+    // if new NAL units found and last sample still there, let's push ...
+    // this helps parsing streams with missing AUD
+    if (avcSample && units.length) {
+      pushAccesUnit(avcSample,track);
+      avcSample = this.avcSample = createAVCSample(false,pes.pts,pes.dts,'');
+    }
 
     units.forEach(unit => {
       switch(unit.type) {
@@ -486,9 +498,10 @@
             avcSample.debug += 'NDR ';
            }
            avcSample.frame = true;
-           // retrieve slice type by parsing beginning of NAL unit (follow H264 spec, slice_header definition) to detect keyframe embedded in NDR
            let data = unit.data;
-           if (data.length > 4) {
+           // only check slice type to detect KF in case SPS found in same packet (any keyframe is preceded by SPS ...)
+           if (spsfound && data.length > 4) {
+             // retrieve slice type by parsing beginning of NAL unit (follow H264 spec, slice_header definition) to detect keyframe embedded in NDR
              let sliceType = new ExpGolomb(data).readSliceType();
              // 2 : I slice, 4 : SI slice, 7 : I slice, 9: SI slice
              // SI slice : A slice that is coded using intra prediction only and using quantisation of the prediction samples.
@@ -505,7 +518,7 @@
           push = true;
           // handle PES not starting with AUD
           if (!avcSample) {
-            avcSample = this.avcSample = this._createAVCSample(true,pes.pts,pes.dts,'');
+            avcSample = this.avcSample = createAVCSample(true,pes.pts,pes.dts,'');
           }
           if(debug) {
             avcSample.debug += 'IDR ';
@@ -593,6 +606,7 @@
         //SPS
         case 7:
           push = true;
+          spsfound = true;
           if(debug && avcSample) {
             avcSample.debug += 'SPS ';
           }
@@ -630,9 +644,9 @@
         case 9:
           push = false;
           if (avcSample) {
-            this.pushAccesUnit(avcSample,track);
+            pushAccesUnit(avcSample,track);
           }
-          avcSample = this.avcSample = this._createAVCSample(false,pes.pts,pes.dts,debug ? 'AUD ': '');
+          avcSample = this.avcSample = createAVCSample(false,pes.pts,pes.dts,debug ? 'AUD ': '');
           break;
         // Filler Data
         case 12:
@@ -652,13 +666,9 @@
     });
     // if last PES packet, push samples
     if (last && avcSample) {
-      this.pushAccesUnit(avcSample,track);
+      pushAccesUnit(avcSample,track);
       this.avcSample = null;
     }
-  }
-
-  _createAVCSample(key,pts,dts,debug) {
-    return { key : key, pts : pts, dts : dts, units : [], debug : debug};
   }
 
   _insertSampleInOrder(arr, data) {
@@ -842,7 +852,7 @@
         startOffset = 0,
         aacOverFlow = this.aacOverFlow,
         aacLastPTS = this.aacLastPTS,
-        config, frameLength, frameDuration, frameIndex, offset, headerLength, stamp, len, aacSample;
+        frameDuration, frameIndex, offset, stamp, len;
     if (aacOverFlow) {
       var tmp = new Uint8Array(aacOverFlow.byteLength + data.byteLength);
       tmp.set(aacOverFlow, 0);
@@ -852,7 +862,7 @@
     }
     // look for ADTS header (0xFFFx)
     for (offset = startOffset, len = data.length; offset < len - 1; offset++) {
-      if ((data[offset] === 0xff) && (data[offset+1] & 0xf0) === 0xf0) {
+      if (ADTS.isHeader(data, offset)) {
         break;
       }
     }
@@ -872,18 +882,10 @@
         return;
       }
     }
-    if (!track.samplerate) {
-      const audioCodec = this.audioCodec;
-      config = ADTS.getAudioConfig(this.observer,data, offset, audioCodec);
-      track.config = config.config;
-      track.samplerate = config.samplerate;
-      track.channelCount = config.channelCount;
-      track.codec = config.codec;
-      track.manifestCodec = config.manifestCodec;
-      logger.log(`parsed codec:${track.codec},rate:${config.samplerate},nb channel:${config.channelCount}`);
-    }
+
+    ADTS.initTrackConfig(track, this.observer, data, offset, this.audioCodec);
     frameIndex = 0;
-    frameDuration = 1024 * 90000 / track.samplerate;
+    frameDuration = ADTS.getFrameDuration(track.samplerate);
 
     // if last AAC frame is overflowing, we should ensure timestamps are contiguous:
     // first sample PTS should be equal to last sample PTS + frameDuration
@@ -895,34 +897,25 @@
       }
     }
 
-    while ((offset + 5) < len) {
-      // The protection skip bit tells us if we have 2 bytes of CRC data at the end of the ADTS header
-      headerLength = (!!(data[offset + 1] & 0x01) ? 7 : 9);
-      // retrieve frame size
-      frameLength = ((data[offset + 3] & 0x03) << 11) |
-                     (data[offset + 4] << 3) |
-                    ((data[offset + 5] & 0xE0) >>> 5);
-      frameLength  -= headerLength;
-      //stamp = pes.pts;
-
-      if ((frameLength > 0) && ((offset + headerLength + frameLength) <= len)) {
-        stamp = pts + frameIndex * frameDuration;
-        //logger.log(`AAC frame, offset/length/total/pts:${offset+headerLength}/${frameLength}/${data.byteLength}/${(stamp/90).toFixed(0)}`);
-        aacSample = {unit: data.subarray(offset + headerLength, offset + headerLength + frameLength), pts: stamp, dts: stamp};
-        track.samples.push(aacSample);
-        track.len += frameLength;
-        offset += frameLength + headerLength;
-        frameIndex++;
-        // look for ADTS header (0xFFFx)
-        for ( ; offset < (len - 1); offset++) {
-          if ((data[offset] === 0xff) && ((data[offset + 1] & 0xf0) === 0xf0)) {
-            break;
-          }
+    //scan for aac samples
+    while (offset < len) {
+      if (ADTS.isHeader(data, offset) && (offset + 5) < len) {
+        var frame = ADTS.appendFrame(track, data, offset, pts, frameIndex);
+        if (frame) {
+          //logger.log(`${Math.round(frame.sample.pts)} : AAC`);
+          offset += frame.length;
+          stamp = frame.sample.pts;
+          frameIndex++;
+        } else {
+          //logger.log('Unable to parse AAC frame');
+          break;
         }
       } else {
-        break;
+        //nothing found, keep looking
+        offset++;
       }
     }
+
     if (offset < len) {
       aacOverFlow = data.subarray(offset, len);
       //logger.log(`AAC: overflow detected:${len-offset}`);
@@ -934,7 +927,27 @@
   }
 
   _parseMPEGPES(pes) {
-    MpegAudio.parse(this._audioTrack, pes.data, 0, pes.pts);
+    var data = pes.data;
+    var length = data.length;
+    var frameIndex = 0;
+    var offset = 0;
+    var pts = pes.pts;
+
+    while (offset < length) {
+      if (MpegAudio.isHeader(data, offset)) {
+        var frame = MpegAudio.appendFrame(this._audioTrack, data, offset, pts, frameIndex);
+        if (frame) {
+          offset += frame.length;
+          frameIndex++;
+        } else {
+          //logger.log('Unable to parse Mpeg audio frame');
+          break;
+        }
+      } else {
+        //nothing found, keep looking
+        offset++;
+      }
+    }
   }
 
   _parseID3PES(pes) {

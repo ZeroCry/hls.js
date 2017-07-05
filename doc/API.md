@@ -2,7 +2,7 @@
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
- 
+
 
 - [Getting started](#getting-started)
   - [First step: setup and support](#first-step-setup-and-support)
@@ -111,16 +111,16 @@
 
 ### First step: setup and support
 
-First include `https://cdn.jsdelivr.net/hls.js/latest/hls.min.js` (or `/hls.js` for unminified) in your web page.
+First include `https://cdn.jsdelivr.net/npm/hls.js@latest` (or `/hls.js` for unminified) in your web page.
 
 ```html
-  <script src="https://cdn.jsdelivr.net/hls.js/latest/hls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 ```
 
 Invoke the following static method: `Hls.isSupported()` to check whether your browser is supporting [MediaSource Extensions](http://w3c.github.io/media-source/).
 
 ```html
-  <script src="https://cdn.jsdelivr.net/hls.js/latest/hls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
     if (Hls.isSupported()) {
  	    console.log("hello hls.js!");
@@ -137,7 +137,7 @@ Let's
    - bind video element to this HLS object
 
 ```html
-  <script src="https://cdn.jsdelivr.net/hls.js/latest/hls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
   <video id="video"></video>
   <script>
@@ -159,7 +159,7 @@ Let's
 You need to provide manifest URL as below:
 
 ```html
-  <script src="https://cdn.jsdelivr.net/hls.js/latest/hls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
   <video id="video"></video>
   <script>
@@ -222,7 +222,7 @@ See sample code below to listen to errors:
       default:
         break;
     }
-  }
+  });
 ```
 
 #### Fatal Error Recovery
@@ -332,7 +332,7 @@ Configuration parameters could be provided to hls.js upon instantiation of `Hls`
       abrEwmaFastVoD: 4.0,
       abrEwmaSlowVoD: 15.0,
       abrEwmaDefaultEstimate: 500000,
-      abrBandWidthFactor: 0.8,
+      abrBandWidthFactor: 0.95,
       abrBandWidthUpFactor: 0.7,
       minAutoBitrate: 0
   };
@@ -349,7 +349,7 @@ This configuration will be applied by default to all instances.
 
 (default: `false`)
 
-  - if set to true, the adaptive algorithm with limit levels usable in auto-quality by the HTML video element dimensions (width and height)
+  - if set to true, the adaptive algorithm with limit levels usable in auto-quality by the HTML video element dimensions (width and height). If dimensions between multiple levels are equal, the cap is chosen as the level with the greatest bandwidth.
   - if set to false, levels will not be limited. All available levels could be used in auto-quality mode taking only bandwidth into consideration.
 
 ### `debug`
@@ -636,6 +636,7 @@ Note: If `fLoader` or `pLoader` are used, they overwrite `loader`!
       @param [stats.bw] {number} - download bandwidth in bit/s
       @param stats.total {number} - total nb of bytes
       @param context {object} - loader context
+      @param networkDetails {object} - loader network details (the xhr for default loaders)
 
       @callback onProgressCallback
       @param stats {object} - loading stats
@@ -646,12 +647,14 @@ Note: If `fLoader` or `pLoader` are used, they overwrite `loader`!
       @param [stats.bw] {number} - current download bandwidth in bit/s (monitored by ABR controller to control emergency switch down)
       @param context {object} - loader context
       @param data {string/arraybuffer} - onProgress data (should be defined only if context.progressData === true)
+      @param networkDetails {object} - loader network details (the xhr for default loaders)
 
       @callback onErrorCallback
       @param error {object} - error data
       @param error.code {number} - error status code
       @param error.text {string} - error description
       @param context {object} - loader context
+      @param networkDetails {object} - loader network details (the xhr for default loaders)
 
       @callback onTimeoutCallback
       @param stats {object} - loading stats
@@ -693,6 +696,40 @@ Note: This will overwrite the default `loader`, as well as your own loader funct
     // See `loader` for details.
   }
 ```
+
+if you want to just make slight adjustements to existing loader implementation, you can also eventually override it, see an example below :
+```js
+
+// special playlist post processing function
+function process(playlist) {
+  return playlist;
+}
+
+class pLoader extends Hls.DefaultConfig.loader {
+
+  constructor(config) {
+    super(config);
+    var load = this.load.bind(this);
+    this.load = function(context, config, callbacks) {
+      if(context.type == 'manifest') {
+        var onSuccess = callbacks.onSuccess;
+        callbacks.onSuccess = function(response, stats, context) {
+          response.data = process(response.data);
+          onSuccess(response,stats,context);
+        }
+      }
+      load(context,config,callbacks);
+    };
+  }
+}
+
+  var hls = new Hls({
+    pLoader : pLoader,
+  });
+
+```
+
+
 
 ### `xhrSetup`
 
@@ -864,7 +901,7 @@ parameter should be a float
 
 ### `abrBandWidthFactor`
 
-(default: `0.8`)
+(default: `0.95`)
 
 Scale factor to be applied against measured bandwidth average, to determine whether we can stay on current or lower quality level.
 If `abrBandWidthFactor * bandwidth average < level.bitrate` then ABR can switch to that level providing that it is equal or less than current level.
@@ -881,7 +918,7 @@ If `abrBandWidthUpFactor * bandwidth average < level.bitrate` then ABR can switc
 (default: `false`)
 
 max bitrate used in ABR by avg measured bitrate
-i.e. if bitrate signaled in variant manifest for a given level is 2Mb/s but average bitrate measured on this level is 2.5Mb/s, 
+i.e. if bitrate signaled in variant manifest for a given level is 2Mb/s but average bitrate measured on this level is 2.5Mb/s,
 then if config value is set to `true`, ABR will use 2.5 Mb/s for this quality level.
 
 ### `minAutoBitrate`
@@ -1142,16 +1179,16 @@ import Hls from 'hls.js';
 let myHls = new Hls({
   pLoader: function (config) {
     let loader = new Hls.DefaultConfig.loader(config);
-    
+
     this.abort = () => loader.abort();
     this.destroy = () => loader.destroy();
     this.load = (context, config, callbacks) => {
       let {type, url} = context;
-  
+
       if (type === 'manifest') {
         console.log(`Manifest ${url} will be loaded.`);
       }
-  
+
       loader.load(context, config, callbacks);
     };
   }
